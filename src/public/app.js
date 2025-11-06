@@ -5,10 +5,34 @@ let selectedSession = null;
 
 // Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
+    loadTheme(); // Cargar tema guardado
     loadData();
     // Auto-refresh cada 15 segundos
     setInterval(loadData, 15000);
 });
+
+// Sistema de Temas
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    
+    showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
 
 // Cargar todos los datos
 async function loadData() {

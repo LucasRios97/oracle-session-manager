@@ -3,14 +3,70 @@ let cpuChart, memoryChart, sessionsChart, tablespacesChart, waitEventsChart, sql
 
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', () => {
+    loadTheme(); // Cargar tema guardado
     initializeCharts();
     loadMetrics();
     // Auto-refresh cada 10 segundos
     setInterval(loadMetrics, 10000);
 });
 
+// Sistema de Temas
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    updateChartsTheme(newTheme);
+    
+    showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+}
+
+function updateChartsTheme(theme) {
+    const textColor = theme === 'dark' ? '#f1f5f9' : '#1e293b';
+    const gridColor = theme === 'dark' ? '#334155' : '#e2e8f0';
+    
+    // Actualizar todos los gráficos con el nuevo tema
+    [cpuChart, memoryChart, sessionsChart, tablespacesChart, waitEventsChart, sqlActivityChart].forEach(chart => {
+        if (chart && chart.options) {
+            if (chart.options.plugins && chart.options.plugins.legend) {
+                chart.options.plugins.legend.labels.color = textColor;
+            }
+            if (chart.options.scales) {
+                Object.keys(chart.options.scales).forEach(scaleKey => {
+                    if (chart.options.scales[scaleKey].ticks) {
+                        chart.options.scales[scaleKey].ticks.color = textColor;
+                    }
+                    if (chart.options.scales[scaleKey].grid) {
+                        chart.options.scales[scaleKey].grid.color = gridColor;
+                    }
+                });
+            }
+            chart.update();
+        }
+    });
+}
+
 // Inicializar todos los gráficos
 function initializeCharts() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const textColor = currentTheme === 'dark' ? '#f1f5f9' : '#1e293b';
+    const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
+    
     // CPU Chart
     const cpuCtx = document.getElementById('cpuChart').getContext('2d');
     cpuChart = new Chart(cpuCtx, {
@@ -28,7 +84,10 @@ function initializeCharts() {
             maintainAspectRatio: true,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        color: textColor
+                    }
                 }
             }
         }
@@ -57,7 +116,21 @@ function initializeCharts() {
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: gridColor
+                    }
                 }
             }
         }
