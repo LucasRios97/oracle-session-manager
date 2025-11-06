@@ -192,6 +192,27 @@
         </div>
     </div>
 
+    <!-- Modal para confirmar desconexión de todas las sesiones de un usuario -->
+    <div id="disconnectAllModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Confirmar Desconexión Masiva</h2>
+                <span class="close" onclick="closeDisconnectAllModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea desconectar <strong>TODAS</strong> las sesiones del usuario?</p>
+                <div class="session-details" id="userDetailsAll"></div>
+                <div class="warning" style="background: #fee2e2; border-left-color: #ef4444;">
+                    <strong>⚠️ ADVERTENCIA CRÍTICA:</strong> Esta acción desconectará <strong>TODAS</strong> las sesiones del usuario simultáneamente. Esta operación NO se puede deshacer y puede afectar procesos en ejecución.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDisconnectAllModal()">Cancelar</button>
+                <button class="btn btn-danger" onclick="confirmDisconnectAll()">🔌 Desconectar Todas las Sesiones</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 

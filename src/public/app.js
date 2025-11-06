@@ -102,6 +102,9 @@ function renderUsersSummary(users) {
                 <button class="btn btn-info btn-small" onclick="filterByUser('${escapeHtml(user.username)}')">
                     👁️ Ver Sesiones
                 </button>
+                <button class="btn btn-danger btn-small" onclick="showDisconnectAllModal('${escapeHtml(user.username)}', ${user.session_count})" style="margin-left: 5px;">
+                    🔌 Cerrar Todas
+                </button>
             </td>
         </tr>
     `).join('');
@@ -326,16 +329,95 @@ function copySql() {
     });
 }
 
+// Variables para desconexión masiva
+let selectedUsername = null;
+let selectedUserSessionCount = 0;
+
+// Mostrar modal de desconexión masiva
+function showDisconnectAllModal(username, sessionCount) {
+    selectedUsername = username;
+    selectedUserSessionCount = sessionCount;
+    
+    const details = `
+        <p><strong>Usuario:</strong> ${escapeHtml(username)}</p>
+        <p><strong>Total de Sesiones:</strong> <span class="status-badge status-active">${sessionCount}</span></p>
+        <p style="margin-top: 15px; color: #dc2626; font-weight: bold;">
+            Se desconectarán ${sessionCount} sesión(es) de este usuario.
+        </p>
+    `;
+    
+    document.getElementById('userDetailsAll').innerHTML = details;
+    document.getElementById('disconnectAllModal').style.display = 'block';
+}
+
+// Cerrar modal de desconexión masiva
+function closeDisconnectAllModal() {
+    document.getElementById('disconnectAllModal').style.display = 'none';
+    selectedUsername = null;
+    selectedUserSessionCount = 0;
+}
+
+// Confirmar desconexión masiva
+async function confirmDisconnectAll() {
+    if (!selectedUsername) return;
+    
+    // Deshabilitar el botón para evitar clicks múltiples
+    const confirmButton = event.target;
+    confirmButton.disabled = true;
+    confirmButton.textContent = '⏳ Desconectando...';
+    
+    try {
+        showToast(`Desconectando ${selectedUserSessionCount} sesiones de ${selectedUsername}...`, 'info');
+        
+        const response = await fetch('/api/sessions/disconnect-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: selectedUsername
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const message = `✅ Proceso completado: ${data.disconnected} sesiones desconectadas, ${data.failed} fallidas`;
+            showToast(message, data.failed > 0 ? 'warning' : 'success');
+            closeDisconnectAllModal();
+            
+            // Mostrar detalles en consola
+            console.log('Resultado de desconexión masiva:', data);
+            
+            // Recargar datos después de 2 segundos
+            setTimeout(loadData, 2000);
+        } else {
+            showToast('❌ Error al desconectar sesiones: ' + data.error, 'error');
+            confirmButton.disabled = false;
+            confirmButton.textContent = '🔌 Desconectar Todas las Sesiones';
+        }
+    } catch (error) {
+        console.error('Error al desconectar sesiones:', error);
+        showToast('❌ Error al desconectar sesiones', 'error');
+        confirmButton.disabled = false;
+        confirmButton.textContent = '🔌 Desconectar Todas las Sesiones';
+    }
+}
+
 // Cerrar modales al hacer click fuera
 window.onclick = function(event) {
     const disconnectModal = document.getElementById('disconnectModal');
     const sqlModal = document.getElementById('sqlModal');
+    const disconnectAllModal = document.getElementById('disconnectAllModal');
     
     if (event.target == disconnectModal) {
         closeModal();
     }
     if (event.target == sqlModal) {
         closeSqlModal();
+    }
+    if (event.target == disconnectAllModal) {
+        closeDisconnectAllModal();
     }
 }
 
@@ -344,6 +426,7 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         closeModal();
         closeSqlModal();
+        closeDisconnectAllModal();
     }
 });
 

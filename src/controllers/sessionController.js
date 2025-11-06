@@ -381,10 +381,131 @@ async function getStatistics(req, res) {
     }
 }
 
+// Desconectar todas las sesiones de un usuario específico
+async function disconnectAllUserSessions(req, res) {
+    let connection;
+    try {
+        const { username } = req.body;
+        
+        console.log('=== Solicitud de desconexión masiva recibida ===');
+        console.log('Usuario:', username);
+        
+        if (!username) {
+            console.log('Error: Usuario no proporcionado');
+            return res.status(400).json({
+                success: false,
+                error: 'Se requiere el nombre de usuario'
+            });
+        }
+        
+        connection = await getConnection();
+        console.log('Conexión obtenida');
+        
+        // Obtener todas las sesiones del usuario
+        const sessionsQuery = `
+            SELECT sid, serial#, status, machine, module
+            FROM v$session
+            WHERE username = :username
+              AND type = 'USER'
+            ORDER BY sid
+        `;
+        
+        const sessionsResult = await connection.execute(sessionsQuery, [username]);
+        console.log(`Sesiones encontradas: ${sessionsResult.rows.length}`);
+        
+        if (sessionsResult.rows.length === 0) {
+            console.log('No se encontraron sesiones para este usuario');
+            return res.json({
+                success: true,
+                message: 'No se encontraron sesiones activas para este usuario',
+                disconnected: 0,
+                failed: 0,
+                details: []
+            });
+        }
+        
+        // Desconectar cada sesión
+        const results = [];
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const row of sessionsResult.rows) {
+            const sid = row[0];
+            const serial = row[1];
+            const status = row[2];
+            const machine = row[3];
+            const module = row[4];
+            
+            try {
+                console.log(`Desconectando sesión SID: ${sid}, Serial: ${serial}, Estado: ${status}`);
+                
+                const plsqlBlock = `
+                    BEGIN
+                        EXECUTE IMMEDIATE 'ALTER SYSTEM DISCONNECT SESSION ''' || :sid || ', ' || :serial || ''' IMMEDIATE';
+                    END;
+                `;
+                
+                await connection.execute(plsqlBlock, { sid: sid, serial: serial }, { autoCommit: true });
+                
+                successCount++;
+                results.push({
+                    sid: sid,
+                    serial: serial,
+                    status: status,
+                    machine: machine,
+                    module: module,
+                    result: 'success',
+                    message: 'Desconectada exitosamente'
+                });
+                
+                console.log(`✓ Sesión ${sid},${serial} desconectada exitosamente`);
+                
+            } catch (err) {
+                failCount++;
+                results.push({
+                    sid: sid,
+                    serial: serial,
+                    status: status,
+                    machine: machine,
+                    module: module,
+                    result: 'error',
+                    message: err.message
+                });
+                
+                console.log(`❌ Error al desconectar sesión ${sid},${serial}: ${err.message}`);
+            }
+        }
+        
+        console.log(`Resumen: ${successCount} exitosas, ${failCount} fallidas`);
+        console.log('=== Fin de desconexión masiva ===\n');
+        
+        res.json({
+            success: true,
+            message: `Proceso completado. ${successCount} sesiones desconectadas, ${failCount} fallidas`,
+            username: username,
+            total_sessions: sessionsResult.rows.length,
+            disconnected: successCount,
+            failed: failCount,
+            details: results
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al desconectar sesiones del usuario:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        await closeConnection(connection);
+        console.log('=== Fin de solicitud de desconexión masiva ===\n');
+    }
+}
+
 module.exports = {
     getActiveSessions,
     getSessionsByUser,
     getUserSessions,
     disconnectSession,
+    disconnectAllUserSessions,
     getStatistics
 };
