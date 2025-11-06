@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Session Manager - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🗄️ Oracle Session Manager</h1>
+                <p class="subtitle">Monitor y Gestión de Sesiones de Base de Datos</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-info" onclick="window.location.href='monitor.html'">
+                    📊 Monitor del Servidor
+                </button>
+                <button class="btn btn-primary" onclick="refreshData()">
+                    🔄 Actualizar
+                </button>
+                <span class="last-update">Última actualización: <span id="lastUpdate">--:--:--</span></span>
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <section class="statistics">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>Total Sesiones</h3>
+                    <p class="stat-value" id="totalSessions">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3>Sesiones Activas</h3>
+                    <p class="stat-value" id="activeSessions">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💤</div>
+                <div class="stat-content">
+                    <h3>Sesiones Inactivas</h3>
+                    <p class="stat-value" id="inactiveSessions">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>Usuarios Únicos</h3>
+                    <p class="stat-value" id="uniqueUsers">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔒</div>
+                <div class="stat-content">
+                    <h3>Sesiones Bloqueadas</h3>
+                    <p class="stat-value" id="blockedSessions">-</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <section class="filters">
+            <div class="filter-group">
+                <label for="userFilter">Filtrar por Usuario:</label>
+                <select id="userFilter" onchange="filterSessions()">
+                    <option value="">Todos los usuarios</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Filtrar por Estado:</label>
+                <select id="statusFilter" onchange="filterSessions()">
+                    <option value="">Todos los estados</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="searchFilter">Buscar:</label>
+                <input type="text" id="searchFilter" placeholder="Buscar por módulo, programa, máquina..." oninput="filterSessions()">
+            </div>
+        </section>
+
+        <!-- Users Summary Table -->
+        <section class="section">
+            <h2>📋 Resumen por Usuario</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Cantidad de Sesiones</th>
+                            <th>Primer Login</th>
+                            <th>Tiempo Máx. Última Llamada</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userSummaryTable">
+                        <tr>
+                            <td colspan="5" class="loading">Cargando datos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Active Sessions Table -->
+        <section class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">🔴 Todas las Sesiones de Usuario</h2>
+                <button class="btn btn-primary btn-small" onclick="refreshActiveSessions()">
+                    🔄 Actualizar Sesiones
+                </button>
+            </div>
+            <div class="session-count">
+                Total de sesiones: <strong id="activeSessionCount">0</strong> | 
+                <span style="color: #10b981;">Activas: <strong id="activeCount">0</strong></span> | 
+                <span style="color: #f59e0b;">Inactivas: <strong id="inactiveCount">0</strong></span>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>SID</th>
+                            <th>Serial#</th>
+                            <th>Usuario</th>
+                            <th>Usuario SO</th>
+                            <th>Estado</th>
+                            <th>Máquina</th>
+                            <th>Módulo</th>
+                            <th>Tiempo Activo</th>
+                            <th>Ver SQL</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsTable">
+                        <tr>
+                            <td colspan="10" class="loading">Cargando sesiones...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal para confirmar desconexión -->
+    <div id="disconnectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Confirmar Desconexión</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea desconectar esta sesión?</p>
+                <div class="session-details" id="sessionDetails"></div>
+                <div class="warning">
+                    <strong>⚠️ Advertencia:</strong> Esta acción desconectará inmediatamente la sesión y no se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-danger" onclick="confirmDisconnect()">Desconectar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar SQL completo -->
+    <div id="sqlModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>📝 SQL en Ejecución</h2>
+                <span class="close" onclick="closeSqlModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="sql-info">
+                    <p><strong>SQL ID:</strong> <span id="sqlId"></span></p>
+                    <p><strong>Usuario:</strong> <span id="sqlUser"></span></p>
+                    <p><strong>Módulo:</strong> <span id="sqlModule"></span></p>
+                    <p><strong>Programa:</strong> <span id="sqlProgram"></span></p>
+                    <p><strong>Proceso:</strong> <span id="sqlProcess"></span></p>
+                </div>
+                <div class="sql-container">
+                    <pre id="sqlText"></pre>
+                </div>
+                <button class="btn btn-primary" onclick="copySql()">📋 Copiar SQL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

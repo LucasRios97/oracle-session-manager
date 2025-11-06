@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor del Servidor - Oracle</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .monitor-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .chart-card h3 {
+            margin-bottom: 15px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-box h4 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .metric-box .value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .metric-box .label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .back-button {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>📊 Monitor del Servidor Oracle</h1>
+                <p class="subtitle">Métricas en Tiempo Real</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                    ← Volver al Dashboard
+                </button>
+                <button class="btn btn-primary" onclick="refreshMetrics()">
+                    🔄 Actualizar
+                </button>
+                <span class="last-update">Última actualización: <span id="lastUpdate">--:--:--</span></span>
+            </div>
+        </header>
+
+        <!-- Métricas Rápidas -->
+        <div class="metric-grid">
+            <div class="metric-box">
+                <h4>CPU Utilizado</h4>
+                <div class="value" id="cpuValue">-</div>
+                <div class="label">%</div>
+            </div>
+            <div class="metric-box">
+                <h4>Memoria SGA</h4>
+                <div class="value" id="sgaValue">-</div>
+                <div class="label">GB Utilizado</div>
+            </div>
+            <div class="metric-box">
+                <h4>Memoria PGA</h4>
+                <div class="value" id="pgaValue">-</div>
+                <div class="label">GB Utilizado</div>
+            </div>
+            <div class="metric-box">
+                <h4>Sesiones Activas</h4>
+                <div class="value" id="sessionsValue">-</div>
+                <div class="label">Conexiones</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="monitor-container">
+            <!-- CPU Usage -->
+            <div class="chart-card">
+                <h3>💻 Uso de CPU</h3>
+                <canvas id="cpuChart"></canvas>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="chart-card">
+                <h3>🧠 Uso de Memoria</h3>
+                <canvas id="memoryChart"></canvas>
+            </div>
+
+            <!-- Sessions -->
+            <div class="chart-card">
+                <h3>👥 Sesiones por Estado</h3>
+                <canvas id="sessionsChart"></canvas>
+            </div>
+
+            <!-- Tablespaces -->
+            <div class="chart-card">
+                <h3>💾 Uso de Tablespaces</h3>
+                <canvas id="tablespacesChart"></canvas>
+            </div>
+
+            <!-- Wait Events -->
+            <div class="chart-card">
+                <h3>⏱️ Top Wait Events</h3>
+                <canvas id="waitEventsChart"></canvas>
+            </div>
+
+            <!-- SQL Activity -->
+            <div class="chart-card">
+                <h3>📈 Actividad SQL (últimos 5 min)</h3>
+                <canvas id="sqlActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="monitor.js"></script>
+</body>
+</html>

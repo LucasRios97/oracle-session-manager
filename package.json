@@ -1,0 +1,17 @@
+{
+  "name": "oracle-session-manager",
+  "version": "1.0.0",
+  "description": "Oracle Session Manager - Monitor and manage Oracle database sessions",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "author": "TuPisa S.A.",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "oracledb": "^6.10.0"
+  }
+}
