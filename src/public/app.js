@@ -102,9 +102,6 @@ function renderUsersSummary(users) {
                 <button class="btn btn-info btn-small" onclick="filterByUser('${escapeHtml(user.username)}')">
                     👁️ Ver Sesiones
                 </button>
-                <button class="btn btn-danger btn-small" onclick="showDisconnectAllModal('${escapeHtml(user.username)}', ${user.session_count})" style="margin-left: 5px;">
-                    🔌 Cerrar Todas
-                </button>
             </td>
         </tr>
     `).join('');
@@ -144,6 +141,15 @@ function filterSessions() {
     const userFilter = document.getElementById('userFilter').value.toLowerCase();
     const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
     const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    // Mostrar/ocultar botón de "Cerrar Todas del Usuario"
+    const disconnectAllBtn = document.getElementById('disconnectAllFilteredBtn');
+    if (userFilter) {
+        disconnectAllBtn.style.display = 'block';
+        disconnectAllBtn.setAttribute('data-username', userFilter.toUpperCase());
+    } else {
+        disconnectAllBtn.style.display = 'none';
+    }
     
     let filtered = allSessions.filter(session => {
         const matchUser = !userFilter || (session.username && session.username.toLowerCase() === userFilter);
@@ -402,6 +408,29 @@ async function confirmDisconnectAll() {
         confirmButton.disabled = false;
         confirmButton.textContent = '🔌 Desconectar Todas las Sesiones';
     }
+}
+
+// Desconectar todas las sesiones del usuario filtrado (desde el botón en el encabezado)
+function disconnectAllFiltered() {
+    const disconnectAllBtn = document.getElementById('disconnectAllFilteredBtn');
+    const username = disconnectAllBtn.getAttribute('data-username');
+    
+    if (!username) {
+        showToast('No hay usuario seleccionado', 'error');
+        return;
+    }
+    
+    // Contar sesiones del usuario filtrado
+    const userSessions = allSessions.filter(s => s.username && s.username.toUpperCase() === username);
+    const sessionCount = userSessions.length;
+    
+    if (sessionCount === 0) {
+        showToast('No hay sesiones para cerrar', 'error');
+        return;
+    }
+    
+    // Mostrar modal de confirmación
+    showDisconnectAllModal(username, sessionCount);
 }
 
 // Cerrar modales al hacer click fuera

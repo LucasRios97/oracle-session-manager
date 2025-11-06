@@ -111,11 +111,16 @@
 
         <!-- Active Sessions Table -->
         <section class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0;">🔴 Todas las Sesiones de Usuario</h2>
-                <button class="btn btn-primary btn-small" onclick="refreshActiveSessions()">
-                    🔄 Actualizar Sesiones
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="disconnectAllFilteredBtn" class="btn btn-danger btn-small" onclick="disconnectAllFiltered()" style="display: none;">
+                        🔌 Cerrar Todas del Usuario
+                    </button>
+                    <button class="btn btn-primary btn-small" onclick="refreshActiveSessions()">
+                        🔄 Actualizar Sesiones
+                    </button>
+                </div>
             </div>
             <div class="session-count">
                 Total de sesiones: <strong id="activeSessionCount">0</strong> | 
