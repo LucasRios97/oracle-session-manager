@@ -102,6 +102,9 @@ function renderUsersSummary(users) {
                 <button class="btn btn-info btn-small" onclick="filterByUser('${escapeHtml(user.username)}')">
                     👁️ Ver Sesiones
                 </button>
+                <button class="btn btn-danger btn-small" onclick="openDisconnectAllModal('${escapeHtml(user.username)}', ${user.session_count})">
+                    🔌 Cerrar Todas
+                </button>
             </td>
         </tr>
     `).join('');
@@ -142,15 +145,6 @@ function filterSessions() {
     const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
     const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
     
-    // Mostrar/ocultar botón de "Cerrar Todas del Usuario"
-    const disconnectAllBtn = document.getElementById('disconnectAllFilteredBtn');
-    if (userFilter) {
-        disconnectAllBtn.style.display = 'block';
-        disconnectAllBtn.setAttribute('data-username', userFilter.toUpperCase());
-    } else {
-        disconnectAllBtn.style.display = 'none';
-    }
-    
     let filtered = allSessions.filter(session => {
         const matchUser = !userFilter || (session.username && session.username.toLowerCase() === userFilter);
         const matchStatus = !statusFilter || (session.status && session.status.toLowerCase() === statusFilter);
@@ -182,14 +176,12 @@ function renderSessions(sessions) {
     inactiveCountElement.textContent = inactiveCount;
     
     if (sessions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="loading">No hay sesiones que coincidan con los filtros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">No hay sesiones que coincidan con los filtros</td></tr>';
         return;
     }
     
     tbody.innerHTML = sessions.map((session, index) => `
         <tr>
-            <td><strong>${session.sid}</strong></td>
-            <td>${session.serial}</td>
             <td><strong>${escapeHtml(session.username || '-')}</strong></td>
             <td>${escapeHtml(session.osuser || '-')}</td>
             <td><span class="status-badge ${session.status === 'ACTIVE' ? 'status-active' : 'status-inactive'}">${session.status}</span></td>
@@ -410,26 +402,8 @@ async function confirmDisconnectAll() {
     }
 }
 
-// Desconectar todas las sesiones del usuario filtrado (desde el botón en el encabezado)
-function disconnectAllFiltered() {
-    const disconnectAllBtn = document.getElementById('disconnectAllFilteredBtn');
-    const username = disconnectAllBtn.getAttribute('data-username');
-    
-    if (!username) {
-        showToast('No hay usuario seleccionado', 'error');
-        return;
-    }
-    
-    // Contar sesiones del usuario filtrado
-    const userSessions = allSessions.filter(s => s.username && s.username.toUpperCase() === username);
-    const sessionCount = userSessions.length;
-    
-    if (sessionCount === 0) {
-        showToast('No hay sesiones para cerrar', 'error');
-        return;
-    }
-    
-    // Mostrar modal de confirmación
+// Abrir modal de desconexión masiva (wrapper para uso desde HTML)
+function openDisconnectAllModal(username, sessionCount) {
     showDisconnectAllModal(username, sessionCount);
 }
 

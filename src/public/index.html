@@ -113,14 +113,9 @@
         <section class="section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0;">🔴 Todas las Sesiones de Usuario</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button id="disconnectAllFilteredBtn" class="btn btn-danger btn-small" onclick="disconnectAllFiltered()" style="display: none;">
-                        🔌 Cerrar Todas del Usuario
-                    </button>
-                    <button class="btn btn-primary btn-small" onclick="refreshActiveSessions()">
-                        🔄 Actualizar Sesiones
-                    </button>
-                </div>
+                <button class="btn btn-primary btn-small" onclick="refreshActiveSessions()">
+                    🔄 Actualizar Sesiones
+                </button>
             </div>
             <div class="session-count">
                 Total de sesiones: <strong id="activeSessionCount">0</strong> | 
@@ -131,8 +126,6 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>SID</th>
-                            <th>Serial#</th>
                             <th>Usuario</th>
                             <th>Usuario SO</th>
                             <th>Estado</th>
@@ -145,7 +138,7 @@
                     </thead>
                     <tbody id="sessionsTable">
                         <tr>
-                            <td colspan="10" class="loading">Cargando sesiones...</td>
+                            <td colspan="8" class="loading">Cargando sesiones...</td>
                         </tr>
                     </tbody>
                 </table>
