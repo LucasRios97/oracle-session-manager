@@ -26,7 +26,8 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
     updateThemeIcon(newTheme);
     
-    showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
+    //Se comentó el toast para evitar distracciones
+    //showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
 }
 
 function updateThemeIcon(theme) {
