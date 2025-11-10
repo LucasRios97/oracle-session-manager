@@ -26,7 +26,8 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
     updateThemeIcon(newTheme);
     
-    showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
+    //Se comentó el toast para evitar distracciones
+    //showToast(`Tema ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'info');
 }
 
 function updateThemeIcon(theme) {
@@ -107,12 +108,12 @@ async function loadUsersSummary() {
 // Renderizar tabla de resumen por usuario
 function renderUsersSummary(users) {
     const tbody = document.getElementById('userSummaryTable');
-
+    
     // Filtrar solo usuarios con 10 o más sesiones
     const filteredUsers = users.filter(user => user.session_count >= 10);
     
     if (filteredUsers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="loading">No hay usuarios con sesiones activas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="loading">No hay usuarios con 10 o más sesiones activas</td></tr>';
         return;
     }
     
