@@ -7,8 +7,8 @@ let selectedSession = null;
 document.addEventListener('DOMContentLoaded', () => {
     loadTheme(); // Cargar tema guardado
     loadData();
-    // Auto-refresh cada 15 segundos
-    setInterval(loadData, 15000);
+    // Auto-refresh cada 15 segundos (comentado para actualización manual)
+    // setInterval(loadData, 15000);
 });
 
 // Sistema de Temas

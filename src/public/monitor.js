@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTheme(); // Cargar tema guardado
     initializeCharts();
     loadMetrics();
-    // Auto-refresh cada 10 segundos
-    setInterval(loadMetrics, 10000);
+    // Auto-refresh cada 10 segundos (comentado para actualización manual)
+    // setInterval(loadMetrics, 10000);
 });
 
 // Sistema de Temas
