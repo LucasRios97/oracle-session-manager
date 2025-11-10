@@ -69,6 +69,16 @@
 </head>
 <body>
     <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <span class="nav-title">🗄️ Oracle Manager</span>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">🏠 Dashboard Principal</a>
+                <a href="monitor.html" class="nav-link active">📊 Monitor del Servidor</a>
+                <a href="monitor-users.html" class="nav-link">👤 Monitor por Usuario</a>
+            </div>
+        </nav>
+
         <!-- Header -->
         <header class="header">
             <div class="header-content">
@@ -76,12 +86,6 @@
                 <p class="subtitle">Métricas en Tiempo Real</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
-                    ← Volver al Dashboard
-                </button>
-                <button class="btn btn-info" onclick="window.location.href='monitor-users.html'">
-                    👤 Dashboard por Usuario
-                </button>
                 <button class="btn btn-primary" onclick="refreshMetrics()">
                     🔄 Actualizar
                 </button>

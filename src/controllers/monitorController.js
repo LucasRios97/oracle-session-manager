@@ -142,27 +142,34 @@ async function getUserMetrics(req, res) {
     try {
         connection = await getConnection();
         
-        // Consulta para obtener métricas agrupadas por usuario
+        // Consulta simplificada usando WITH para obtener métricas por sesión primero
         const userMetricsQuery = `
+            WITH session_stats AS (
+                SELECT 
+                    ses.username,
+                    ses.sid,
+                    ses.status,
+                    NVL(MAX(CASE WHEN sn.name = 'session pga memory' THEN ss.value END), 0) as pga_memory,
+                    NVL(MAX(CASE WHEN sn.name = 'CPU used by this session' THEN ss.value END), 0) as cpu_used,
+                    NVL(MAX(CASE WHEN sn.name = 'session logical reads' THEN ss.value END), 0) as logical_reads,
+                    NVL(MAX(CASE WHEN sn.name = 'physical reads' THEN ss.value END), 0) as physical_reads
+                FROM V$SESSION ses
+                LEFT JOIN V$SESSTAT ss ON ses.sid = ss.sid
+                LEFT JOIN V$STATNAME sn ON ss.statistic# = sn.statistic#
+                WHERE ses.type = 'USER'
+                  AND ses.username IS NOT NULL
+                GROUP BY ses.username, ses.sid, ses.status
+            )
             SELECT 
-                s.username,
+                username,
                 COUNT(*) as total_sessions,
-                COUNT(CASE WHEN s.status = 'ACTIVE' THEN 1 END) as active_sessions,
-                ROUND(SUM(ss.value) / 1024 / 1024, 2) as memory_mb,
-                ROUND(SUM(st.value) / 100, 2) as cpu_seconds,
-                SUM(CASE WHEN sn.name = 'session logical reads' THEN sn.value ELSE 0 END) as logical_reads,
-                SUM(CASE WHEN sn.name = 'physical reads' THEN sn.value ELSE 0 END) as physical_reads
-            FROM V$SESSION s
-            LEFT JOIN V$SESSTAT ss ON s.sid = ss.sid
-            LEFT JOIN V$STATNAME sn1 ON ss.statistic# = sn1.statistic# AND sn1.name = 'session pga memory'
-            LEFT JOIN V$SESSTAT st ON s.sid = st.sid
-            LEFT JOIN V$STATNAME sn2 ON st.statistic# = sn2.statistic# AND sn2.name = 'CPU used by this session'
-            LEFT JOIN V$SESSTAT sn ON s.sid = sn.sid
-            LEFT JOIN V$STATNAME snm ON sn.statistic# = snm.statistic# 
-                AND snm.name IN ('session logical reads', 'physical reads')
-            WHERE s.type = 'USER'
-              AND s.username IS NOT NULL
-            GROUP BY s.username
+                SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) as active_sessions,
+                ROUND(SUM(pga_memory) / 1024 / 1024, 2) as memory_mb,
+                ROUND(SUM(cpu_used) / 100, 2) as cpu_seconds,
+                SUM(logical_reads) as logical_reads,
+                SUM(physical_reads) as physical_reads
+            FROM session_stats
+            GROUP BY username
             ORDER BY memory_mb DESC
         `;
         

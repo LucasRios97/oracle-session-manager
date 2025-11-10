@@ -9,6 +9,16 @@
 </head>
 <body>
     <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <span class="nav-title">🗄️ Oracle Manager</span>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">🏠 Dashboard Principal</a>
+                <a href="monitor.html" class="nav-link">📊 Monitor del Servidor</a>
+                <a href="monitor-users.html" class="nav-link">👤 Monitor por Usuario</a>
+            </div>
+        </nav>
+
         <!-- Header -->
         <header class="header">
             <div class="header-content">
@@ -16,9 +26,6 @@
                 <p class="subtitle">Monitor y Gestión de Sesiones de Base de Datos</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-info" onclick="window.location.href='monitor.html'">
-                    📊 Monitor del Servidor
-                </button>
                 <button class="btn btn-primary" onclick="refreshData()">
                     🔄 Actualizar
                 </button>
