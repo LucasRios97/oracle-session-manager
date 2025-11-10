@@ -136,6 +136,80 @@ async function getServerMetrics(req, res) {
     }
 }
 
+// Obtener métricas por usuario
+async function getUserMetrics(req, res) {
+    let connection;
+    try {
+        connection = await getConnection();
+        
+        // Consulta para obtener métricas agrupadas por usuario
+        const userMetricsQuery = `
+            SELECT 
+                s.username,
+                COUNT(*) as total_sessions,
+                COUNT(CASE WHEN s.status = 'ACTIVE' THEN 1 END) as active_sessions,
+                ROUND(SUM(ss.value) / 1024 / 1024, 2) as memory_mb,
+                ROUND(SUM(st.value) / 100, 2) as cpu_seconds,
+                SUM(CASE WHEN sn.name = 'session logical reads' THEN sn.value ELSE 0 END) as logical_reads,
+                SUM(CASE WHEN sn.name = 'physical reads' THEN sn.value ELSE 0 END) as physical_reads
+            FROM V$SESSION s
+            LEFT JOIN V$SESSTAT ss ON s.sid = ss.sid
+            LEFT JOIN V$STATNAME sn1 ON ss.statistic# = sn1.statistic# AND sn1.name = 'session pga memory'
+            LEFT JOIN V$SESSTAT st ON s.sid = st.sid
+            LEFT JOIN V$STATNAME sn2 ON st.statistic# = sn2.statistic# AND sn2.name = 'CPU used by this session'
+            LEFT JOIN V$SESSTAT sn ON s.sid = sn.sid
+            LEFT JOIN V$STATNAME snm ON sn.statistic# = snm.statistic# 
+                AND snm.name IN ('session logical reads', 'physical reads')
+            WHERE s.type = 'USER'
+              AND s.username IS NOT NULL
+            GROUP BY s.username
+            ORDER BY memory_mb DESC
+        `;
+        
+        const result = await connection.execute(userMetricsQuery);
+        
+        // Formatear resultados
+        const users = result.rows.map(row => ({
+            username: row[0],
+            total_sessions: row[1],
+            active_sessions: row[2],
+            memory_mb: row[3] || 0,
+            cpu_seconds: row[4] || 0,
+            logical_reads: row[5] || 0,
+            physical_reads: row[6] || 0
+        }));
+        
+        // Calcular resumen
+        const summary = {
+            total_users: users.length,
+            active_users: users.filter(u => u.active_sessions > 0).length,
+            total_memory_mb: users.reduce((sum, u) => sum + u.memory_mb, 0),
+            total_cpu_seconds: users.reduce((sum, u) => sum + u.cpu_seconds, 0),
+            total_active_sessions: users.reduce((sum, u) => sum + u.active_sessions, 0),
+            total_inactive_sessions: users.reduce((sum, u) => sum + (u.total_sessions - u.active_sessions), 0)
+        };
+        
+        res.json({
+            success: true,
+            metrics: {
+                summary: summary,
+                users: users
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener métricas por usuario:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        await closeConnection(connection);
+    }
+}
+
 module.exports = {
-    getServerMetrics
+    getServerMetrics,
+    getUserMetrics
 };

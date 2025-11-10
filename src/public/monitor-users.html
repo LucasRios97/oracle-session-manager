@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor por Usuario - Oracle</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .monitor-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .chart-card h3 {
+            margin-bottom: 15px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-box h4 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .metric-box .value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .metric-box .label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .users-table-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table thead {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .users-table tbody tr:hover {
+            background: var(--hover-bg);
+        }
+
+        .users-table tbody tr.high-usage {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .users-table tbody tr.medium-usage {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .badge-high {
+            background: #ef4444;
+            color: white;
+        }
+
+        .badge-medium {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .badge-low {
+            background: #10b981;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-high {
+            background: #ef4444;
+        }
+
+        .progress-medium {
+            background: #f59e0b;
+        }
+
+        .progress-low {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>👤 Monitor por Usuario Oracle</h1>
+                <p class="subtitle">Consumo de Recursos por Usuario</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='monitor.html'">
+                    ← Volver al Monitor
+                </button>
+                <button class="btn btn-primary" onclick="refreshMetrics()">
+                    🔄 Actualizar
+                </button>
+                <span class="last-update">Última actualización: <span id="lastUpdate">--:--:--</span></span>
+            </div>
+        </header>
+
+        <!-- Métricas Rápidas -->
+        <div class="metric-grid">
+            <div class="metric-box">
+                <h4>Total Usuarios</h4>
+                <div class="value" id="totalUsers">-</div>
+                <div class="label">Conectados</div>
+            </div>
+            <div class="metric-box">
+                <h4>Usuarios Activos</h4>
+                <div class="value" id="activeUsers">-</div>
+                <div class="label">Con sesiones activas</div>
+            </div>
+            <div class="metric-box">
+                <h4>Memoria Total</h4>
+                <div class="value" id="totalMemory">-</div>
+                <div class="label">GB Utilizado</div>
+            </div>
+            <div class="metric-box">
+                <h4>CPU Total</h4>
+                <div class="value" id="totalCPU">-</div>
+                <div class="label">Segundos utilizados</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="monitor-container">
+            <!-- Top Users by Memory -->
+            <div class="chart-card">
+                <h3>💾 Top 10 Usuarios por Memoria</h3>
+                <canvas id="memoryChart"></canvas>
+            </div>
+
+            <!-- Top Users by CPU -->
+            <div class="chart-card">
+                <h3>⚡ Top 10 Usuarios por CPU</h3>
+                <canvas id="cpuChart"></canvas>
+            </div>
+
+            <!-- Sessions by User -->
+            <div class="chart-card">
+                <h3>📊 Sesiones por Usuario</h3>
+                <canvas id="sessionsChart"></canvas>
+            </div>
+
+            <!-- Active vs Inactive -->
+            <div class="chart-card">
+                <h3>🔄 Estado de Sesiones</h3>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabla Detallada de Usuarios -->
+        <div class="users-table-container">
+            <h3>📋 Detalle por Usuario</h3>
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Sesiones</th>
+                        <th>Activas</th>
+                        <th>Memoria (MB)</th>
+                        <th>CPU (seg)</th>
+                        <th>Lecturas Lógicas</th>
+                        <th>Lecturas Físicas</th>
+                        <th>Nivel de Uso</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">
+                            Cargando datos...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Theme Toggle Button -->
+    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <script src="monitor-users.js"></script>
+</body>
+</html>

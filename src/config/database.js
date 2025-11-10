@@ -2,7 +2,7 @@ const oracledb = require('oracledb');
 require('dotenv').config();
 
 // Configurar el Oracle Instant Client
-oracledb.initOracleClient({ libDir: 'C:\\instantclient_19_28' });
+oracledb.initOracleClient({ libDir: '/opt/instanclient/instantclient_12_2' });
 
 const dbConfig = {
     user: process.env.DB_USER,
