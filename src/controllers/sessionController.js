@@ -275,22 +275,23 @@ async function disconnectSession(req, res) {
         
         console.log('Info de la sesión:', sessionInfo);
         
-        // Ejecutar el comando de desconexión usando bind variables
+        // Ejecutar el procedimiento almacenado para desconectar la sesión
+        // El procedimiento INV.kill_user_session tiene privilegios AUTHID DEFINER
         const plsqlBlock = `
             BEGIN
-                EXECUTE IMMEDIATE 'ALTER SYSTEM DISCONNECT SESSION ''' || :sid || ', ' || :serial || ''' IMMEDIATE';
+                INV.kill_user_session(:sid, :serial);
             END;
         `;
         
-        console.log('Ejecutando bloque PL/SQL...');
+        console.log('Ejecutando procedimiento almacenado INV.kill_user_session...');
         await connection.execute(plsqlBlock, { sid: sid, serial: serial }, { autoCommit: true });
-        console.log('✓ Sesión desconectada exitosamente');
+        console.log('✓ Sesión desconectada exitosamente usando procedimiento almacenado');
         
         res.json({
             success: true,
             message: 'Sesión desconectada exitosamente',
             session: sessionInfo,
-            command: `ALTER SYSTEM DISCONNECT SESSION '${sid}, ${serial}' IMMEDIATE`
+            method: 'Stored Procedure (INV.kill_user_session)'
         });
         
     } catch (error) {
@@ -439,9 +440,10 @@ async function disconnectAllUserSessions(req, res) {
             try {
                 console.log(`Desconectando sesión SID: ${sid}, Serial: ${serial}, Estado: ${status}`);
                 
+                // Usar el procedimiento almacenado en lugar de ALTER SYSTEM directo
                 const plsqlBlock = `
                     BEGIN
-                        EXECUTE IMMEDIATE 'ALTER SYSTEM DISCONNECT SESSION ''' || :sid || ', ' || :serial || ''' IMMEDIATE';
+                        INV.kill_user_session(:sid, :serial);
                     END;
                 `;
                 
