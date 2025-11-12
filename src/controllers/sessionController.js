@@ -1,11 +1,12 @@
-const { getConnection, closeConnection } = require('../config/database');
+const { getConnectionFromUser, closeConnection } = require('../config/database');
 const oracledb = require('oracledb');
 
 // Obtener todas las sesiones activas
 async function getActiveSessions(req, res) {
     let connection;
     try {
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         const query = `
             SELECT sess.sid,
@@ -116,7 +117,8 @@ async function getActiveSessions(req, res) {
 async function getSessionsByUser(req, res) {
     let connection;
     try {
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         const query = `
             SELECT username,
@@ -160,8 +162,9 @@ async function getSessionsByUser(req, res) {
 async function getUserSessions(req, res) {
     let connection;
     try {
-        const { username } = req.params;
-        connection = await getConnection();
+        const { username: targetUsername } = req.params;
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         const query = `
             SELECT sess.sid,
@@ -188,7 +191,7 @@ async function getUserSessions(req, res) {
             ORDER BY sess.status DESC, sess.last_call_et DESC
         `;
         
-        const result = await connection.execute(query, [username]);
+        const result = await connection.execute(query, [targetUsername]);
         
         const sessions = result.rows.map(row => ({
             sid: row[0],
@@ -211,7 +214,7 @@ async function getUserSessions(req, res) {
         
         res.json({
             success: true,
-            username: username,
+            username: targetUsername,
             count: sessions.length,
             sessions: sessions
         });
@@ -244,7 +247,8 @@ async function disconnectSession(req, res) {
             });
         }
         
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         console.log('Conexión obtenida');
         
         // Primero verificar que la sesión existe
@@ -315,7 +319,8 @@ async function disconnectSession(req, res) {
 async function getStatistics(req, res) {
     let connection;
     try {
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         // Total de sesiones
         const totalSessionsQuery = `
@@ -386,12 +391,12 @@ async function getStatistics(req, res) {
 async function disconnectAllUserSessions(req, res) {
     let connection;
     try {
-        const { username } = req.body;
+        const { username: targetUsername } = req.body;
         
         console.log('=== Solicitud de desconexión masiva recibida ===');
-        console.log('Usuario:', username);
+        console.log('Usuario objetivo:', targetUsername);
         
-        if (!username) {
+        if (!targetUsername) {
             console.log('Error: Usuario no proporcionado');
             return res.status(400).json({
                 success: false,
@@ -399,10 +404,11 @@ async function disconnectAllUserSessions(req, res) {
             });
         }
         
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         console.log('Conexión obtenida');
         
-        // Obtener todas las sesiones del usuario
+        // Obtener todas las sesiones del usuario objetivo
         const sessionsQuery = `
             SELECT sid, serial#, status, machine, module
             FROM v$session
@@ -411,7 +417,7 @@ async function disconnectAllUserSessions(req, res) {
             ORDER BY sid
         `;
         
-        const sessionsResult = await connection.execute(sessionsQuery, [username]);
+        const sessionsResult = await connection.execute(sessionsQuery, [targetUsername]);
         console.log(`Sesiones encontradas: ${sessionsResult.rows.length}`);
         
         if (sessionsResult.rows.length === 0) {
@@ -484,7 +490,7 @@ async function disconnectAllUserSessions(req, res) {
         res.json({
             success: true,
             message: `Proceso completado. ${successCount} sesiones desconectadas, ${failCount} fallidas`,
-            username: username,
+            username: targetUsername,
             total_sessions: sessionsResult.rows.length,
             disconnected: successCount,
             failed: failCount,

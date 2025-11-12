@@ -1,10 +1,11 @@
-const { getConnection, closeConnection } = require('../config/database');
+const { getConnectionFromUser, closeConnection } = require('../config/database');
 
 // Obtener métricas del servidor
 async function getServerMetrics(req, res) {
     let connection;
     try {
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         // CPU Usage
         const cpuQuery = `
@@ -140,7 +141,8 @@ async function getServerMetrics(req, res) {
 async function getUserMetrics(req, res) {
     let connection;
     try {
-        connection = await getConnection();
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
         
         // Consulta simplificada usando WITH para obtener métricas por sesión primero
         const userMetricsQuery = `

@@ -17,6 +17,9 @@
                 <a href="monitor.html" class="nav-link">📊 Monitor del Servidor</a>
                 <a href="monitor-users.html" class="nav-link">👤 Monitor por Usuario</a>
             </div>
+            <div class="user-display" id="userDisplay" style="margin-left: auto; padding: 8px 16px; background: var(--bg-color); border-radius: 6px; font-weight: 500;">
+                Cargando...
+            </div>
         </nav>
 
         <!-- Header -->
@@ -227,6 +230,13 @@
         <span id="themeIcon">🌙</span>
     </button>
 
+    <script src="auth-common.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Inicializar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initAuth();
+        });
+    </script>
 </body>
 </html>

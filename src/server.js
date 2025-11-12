@@ -1,37 +1,61 @@
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
-const { createPool, closePool, getPoolStatistics } = require('./config/database');
+const { closeAllUserPools, getAllUserPoolsStatistics } = require('./config/database');
 const sessionRoutes = require('./routes/sessionRoutes');
 const monitorRoutes = require('./routes/monitorRoutes');
+const authRoutes = require('./routes/authRoutes');
+const { requireAuth, attachUser } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Configuración de sesiones HTTP
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'oracle-session-manager-secret-key-2024',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Cambiar a true si usas HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    }
+}));
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(attachUser); // Agregar información del usuario a todas las requests
 
 // Servir archivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rutas API
-app.use('/api', sessionRoutes);
-app.use('/api/monitor', monitorRoutes);
+// Rutas públicas (sin autenticación)
+app.use('/api/auth', authRoutes);
 
-// Ruta para obtener estadísticas del pool de conexiones
-app.get('/api/pool-stats', (req, res) => {
-    const stats = getPoolStatistics();
+// Rutas protegidas (requieren autenticación)
+app.use('/api/sessions', requireAuth, sessionRoutes);
+app.use('/api/monitor', requireAuth, monitorRoutes);
+app.use('/api', requireAuth, sessionRoutes); // Para compatibilidad con rutas antiguas
+
+// Ruta para obtener estadísticas de pools
+app.get('/api/pool-stats', requireAuth, (req, res) => {
+    const stats = getAllUserPoolsStatistics();
     res.json({
         success: true,
         statistics: stats
     });
 });
 
-// Ruta principal
+// Ruta principal - redirigir a login si no está autenticado
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (req.session.user) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.redirect('/login.html');
+    }
 });
 
 // Manejo de errores 404
@@ -42,8 +66,7 @@ app.use((req, res) => {
 // Función para iniciar el servidor
 async function startServer() {
     try {
-        // Crear el pool de conexiones antes de iniciar el servidor
-        await createPool();
+        // Nota: No creamos pool inicial, se crean por usuario al hacer login
         
         // Iniciar servidor
         app.listen(PORT, () => {
@@ -51,8 +74,8 @@ async function startServer() {
             console.log(`║  Oracle Session Manager                                ║`);
             console.log(`╠════════════════════════════════════════════════════════╣`);
             console.log(`║  Servidor corriendo en: http://localhost:${PORT}       ║`);
-            console.log(`║  Base de datos: ${process.env.DB_CONNECTION_STRING}    ║`);
-            console.log(`║  Usuario: ${process.env.DB_USER}                       ║`);
+            console.log(`║  Modo: Autenticación por usuario                       ║`);
+            console.log(`║  Accede a: http://localhost:${PORT}/login.html        ║`);
             console.log(`╚════════════════════════════════════════════════════════╝`);
         });
     } catch (err) {
@@ -64,13 +87,13 @@ async function startServer() {
 // Manejo de señales para cerrar el pool correctamente
 process.on('SIGINT', async () => {
     console.log('\n⚠️  Cerrando servidor...');
-    await closePool();
+    await closeAllUserPools();
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
     console.log('\n⚠️  Cerrando servidor...');
-    await closePool();
+    await closeAllUserPools();
     process.exit(0);
 });
 

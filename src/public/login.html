@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Oracle Session Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🗄️</text></svg>">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Logo y Título -->
+            <div class="login-header">
+                <div class="logo">🗄️</div>
+                <h1>Oracle Session Manager</h1>
+                <p class="subtitle">Inicia sesión con tu usuario de Oracle</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">
+                        <span class="icon">👤</span>
+                        Usuario Oracle
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Ej: LDRIOS" 
+                        required 
+                        autocomplete="username"
+                        autofocus
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <span class="icon">🔒</span>
+                        Contraseña
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Contraseña de Oracle" 
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="connectString">
+                        <span class="icon">🌐</span>
+                        Cadena de Conexión
+                    </label>
+                    <input 
+                        type="text" 
+                        id="connectString" 
+                        name="connectString" 
+                        placeholder="//10.0.0.195:1521/tupi" 
+                        value="//10.0.0.195:1521/tupi"
+                        required
+                    >
+                </div>
+
+                <!-- Mensaje de Error -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- Botón de Login -->
+                <button type="submit" id="loginButton" class="btn-login">
+                    <span class="btn-text">Iniciar Sesión</span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="spinner"></span>
+                        Conectando...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <p>
+                    <span class="icon">ℹ️</span>
+                    Usa tus credenciales de Oracle Database
+                </p>
+                <p class="version">v1.0.0</p>
+            </div>
+        </div>
+
+        <!-- Botón de Cambio de Tema -->
+        <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+            <span id="themeIcon">🌙</span>
+        </button>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
