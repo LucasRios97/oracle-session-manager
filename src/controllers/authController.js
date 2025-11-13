@@ -3,16 +3,19 @@ const { createUserPool, closeUserPool, getConnectionFromUser } = require('../con
 // Login - Autenticar usuario con Oracle
 async function login(req, res) {
     try {
-        const { username, password, connectString } = req.body;
+        const { username, password } = req.body;
+        
+        // Obtener la cadena de conexión del .env
+        const connectString = process.env.DEFAULT_CONNECTION_STRING || '//10.0.0.195:1521/tupi';
         
         console.log('=== Intento de login ===');
         console.log('Usuario:', username);
         console.log('Cadena de conexión:', connectString);
         
-        if (!username || !password || !connectString) {
+        if (!username || !password) {
             return res.status(400).json({
                 success: false,
-                error: 'Se requieren usuario, contraseña y cadena de conexión'
+                error: 'Se requieren usuario y contraseña'
             });
         }
         

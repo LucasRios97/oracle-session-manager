@@ -50,10 +50,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     
     const username = document.getElementById('username').value.trim().toUpperCase();
     const password = document.getElementById('password').value;
-    const connectString = document.getElementById('connectString').value.trim();
     
     // Validaciones básicas
-    if (!username || !password || !connectString) {
+    if (!username || !password) {
         showError('Por favor, completa todos los campos');
         return;
     }
@@ -70,8 +69,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 username: username,
-                password: password,
-                connectString: connectString
+                password: password
             })
         });
         
