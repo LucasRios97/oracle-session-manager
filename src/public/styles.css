@@ -728,3 +728,40 @@ body {
     }
 }
 
+/* Paginación */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.pagination-info {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    padding: 0 10px;
+}
+
+.pagination-info strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .pagination-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pagination-info {
+        text-align: center;
+        width: 100%;
+    }
+}
+

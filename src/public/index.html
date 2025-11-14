@@ -154,6 +154,17 @@
                     </tbody>
                 </table>
             </div>
+            <!-- Paginación -->
+            <div id="paginationControls" class="pagination-controls" style="display: none;">
+                <button class="btn btn-secondary btn-small" onclick="goToFirstPage()" id="firstPageBtn">⏮️ Primera</button>
+                <button class="btn btn-secondary btn-small" onclick="previousPage()" id="prevPageBtn">⬅️ Anterior</button>
+                <span class="pagination-info">
+                    Página <strong id="currentPage">1</strong> de <strong id="totalPages">1</strong>
+                    (<span id="pageRange">1-10</span> de <strong id="totalRecords">0</strong> registros)
+                </span>
+                <button class="btn btn-secondary btn-small" onclick="nextPage()" id="nextPageBtn">Siguiente ➡️</button>
+                <button class="btn btn-secondary btn-small" onclick="goToLastPage()" id="lastPageBtn">Última ⏭️</button>
+            </div>
         </section>
     </div>
 

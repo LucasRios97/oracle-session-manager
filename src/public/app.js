@@ -2,6 +2,9 @@
 let allSessions = [];
 let allUsers = [];
 let selectedSession = null;
+let currentPage = 1;
+const recordsPerPage = 10;
+let filteredSessions = [];
 
 // Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
@@ -109,7 +112,7 @@ async function loadUsersSummary() {
 function renderUsersSummary(users) {
     const tbody = document.getElementById('userSummaryTable');
     
-    // Filtrar solo usuarios con 10 o más sesiones
+    // Filtrar solo usuarios con 10 o más sesiones 
     const filteredUsers = users.filter(user => user.session_count >= 10);
     
     if (filteredUsers.length === 0) {
@@ -170,7 +173,7 @@ function filterSessions() {
     const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
     const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
     
-    let filtered = allSessions.filter(session => {
+    filteredSessions = allSessions.filter(session => {
         const matchUser = !userFilter || (session.username && session.username.toLowerCase() === userFilter);
         const matchStatus = !statusFilter || (session.status && session.status.toLowerCase() === statusFilter);
         const matchSearch = !searchFilter || 
@@ -182,30 +185,43 @@ function filterSessions() {
         return matchUser && matchStatus && matchSearch;
     });
     
-    renderSessions(filtered);
+    // Resetear a la primera página cuando se aplican filtros
+    currentPage = 1;
+    renderSessions();
 }
 
-// Renderizar tabla de sesiones
-function renderSessions(sessions) {
+// Renderizar tabla de sesiones con paginación
+function renderSessions() {
     const tbody = document.getElementById('sessionsTable');
     const countElement = document.getElementById('activeSessionCount');
     const activeCountElement = document.getElementById('activeCount');
     const inactiveCountElement = document.getElementById('inactiveCount');
+    const paginationControls = document.getElementById('paginationControls');
     
     // Contar sesiones activas e inactivas
-    const activeCount = sessions.filter(s => s.status === 'ACTIVE').length;
-    const inactiveCount = sessions.filter(s => s.status === 'INACTIVE').length;
+    const activeCount = filteredSessions.filter(s => s.status === 'ACTIVE').length;
+    const inactiveCount = filteredSessions.filter(s => s.status === 'INACTIVE').length;
     
-    countElement.textContent = sessions.length;
+    countElement.textContent = filteredSessions.length;
     activeCountElement.textContent = activeCount;
     inactiveCountElement.textContent = inactiveCount;
     
-    if (sessions.length === 0) {
+    if (filteredSessions.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="loading">No hay sesiones que coincidan con los filtros</td></tr>';
+        paginationControls.style.display = 'none';
         return;
     }
     
-    tbody.innerHTML = sessions.map((session, index) => `
+    // Calcular paginación
+    const totalPages = Math.ceil(filteredSessions.length / recordsPerPage);
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = Math.min(startIndex + recordsPerPage, filteredSessions.length);
+    const currentSessions = filteredSessions.slice(startIndex, endIndex);
+    
+    // Renderizar sesiones de la página actual
+    tbody.innerHTML = currentSessions.map((session, index) => {
+        const globalIndex = startIndex + index; // Índice global para acceder a filteredSessions
+        return `
         <tr>
             <td><strong>${escapeHtml(session.username || '-')}</strong></td>
             <td>${escapeHtml(session.osuser || '-')}</td>
@@ -215,30 +231,104 @@ function renderSessions(sessions) {
             <td><strong>${session.formatted_last_call_et || formatSeconds(session.last_call_et)}</strong></td>
             <td>
                 ${session.sql_text ? 
-                    `<button class="btn btn-info btn-small" data-session-index="${index}" data-action="show-sql" title="Ver SQL completo">
+                    `<button class="btn btn-info btn-small" data-session-index="${globalIndex}" data-action="show-sql" title="Ver SQL completo">
                         📝 Ver SQL
                     </button>` 
                     : '-'}
             </td>
             <td>
-                <button class="btn btn-danger btn-small" data-session-index="${index}" data-action="disconnect">
+                <button class="btn btn-danger btn-small" data-session-index="${globalIndex}" data-action="disconnect">
                     🔌 Desconectar
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
     
     // Agregar event listeners después de renderizar
-    addSessionEventListeners(sessions);
+    addSessionEventListeners();
+    
+    // Actualizar controles de paginación
+    updatePaginationControls(totalPages, startIndex, endIndex);
+}
+
+// Actualizar controles de paginación
+function updatePaginationControls(totalPages, startIndex, endIndex) {
+    const paginationControls = document.getElementById('paginationControls');
+    const currentPageElement = document.getElementById('currentPage');
+    const totalPagesElement = document.getElementById('totalPages');
+    const pageRangeElement = document.getElementById('pageRange');
+    const totalRecordsElement = document.getElementById('totalRecords');
+    const firstPageBtn = document.getElementById('firstPageBtn');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const lastPageBtn = document.getElementById('lastPageBtn');
+    
+    // Mostrar/ocultar controles según la cantidad de registros
+    if (filteredSessions.length > recordsPerPage) {
+        paginationControls.style.display = 'flex';
+        
+        currentPageElement.textContent = currentPage;
+        totalPagesElement.textContent = totalPages;
+        pageRangeElement.textContent = `${startIndex + 1}-${endIndex}`;
+        totalRecordsElement.textContent = filteredSessions.length;
+        
+        // Habilitar/deshabilitar botones según la página actual
+        firstPageBtn.disabled = currentPage === 1;
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages;
+        lastPageBtn.disabled = currentPage === totalPages;
+    } else {
+        paginationControls.style.display = 'none';
+    }
+}
+
+// Funciones de navegación de páginas
+function nextPage() {
+    const totalPages = Math.ceil(filteredSessions.length / recordsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderSessions();
+        scrollToSessionsTable();
+    }
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderSessions();
+        scrollToSessionsTable();
+    }
+}
+
+function goToFirstPage() {
+    currentPage = 1;
+    renderSessions();
+    scrollToSessionsTable();
+}
+
+function goToLastPage() {
+    const totalPages = Math.ceil(filteredSessions.length / recordsPerPage);
+    currentPage = totalPages;
+    renderSessions();
+    scrollToSessionsTable();
+}
+
+// Scroll suave a la tabla de sesiones
+function scrollToSessionsTable() {
+    const table = document.querySelector('.section:last-of-type');
+    if (table) {
+        table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Agregar event listeners a los botones de las sesiones
-function addSessionEventListeners(sessions) {
+function addSessionEventListeners() {
     // Event listeners para botones de desconexión
     document.querySelectorAll('[data-action="disconnect"]').forEach(button => {
         button.addEventListener('click', function() {
             const index = parseInt(this.getAttribute('data-session-index'));
-            const session = sessions[index];
+            const session = filteredSessions[index];
             if (session) {
                 showDisconnectModal(session);
             }
@@ -249,7 +339,7 @@ function addSessionEventListeners(sessions) {
     document.querySelectorAll('[data-action="show-sql"]').forEach(element => {
         element.addEventListener('click', function() {
             const index = parseInt(this.getAttribute('data-session-index'));
-            const session = sessions[index];
+            const session = filteredSessions[index];
             if (session) {
                 showSqlModal(session);
             }
