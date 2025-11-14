@@ -8,6 +8,9 @@ let filteredSessions = [];
 
 // Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
+    // Ir al inicio de la página al cargar/refrescar
+    window.scrollTo(0, 0);
+    
     loadTheme(); // Cargar tema guardado
     loadData();
     // Auto-refresh cada 15 segundos (comentado para actualización manual)

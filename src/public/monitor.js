@@ -3,6 +3,9 @@ let cpuChart, memoryChart, sessionsChart, tablespacesChart, waitEventsChart, sql
 
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', () => {
+    // Ir al inicio de la página al cargar/refrescar
+    window.scrollTo(0, 0);
+    
     loadTheme(); // Cargar tema guardado
     initializeCharts();
     loadMetrics();
