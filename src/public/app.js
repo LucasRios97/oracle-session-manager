@@ -534,6 +534,7 @@ window.onclick = function(event) {
     const sqlModal = document.getElementById('sqlModal');
     const disconnectAllModal = document.getElementById('disconnectAllModal');
     const changePasswordModal = document.getElementById('changePasswordModal');
+    const quickPasswordModal = document.getElementById('quickPasswordModal');
     
     if (event.target == disconnectModal) {
         closeModal();
@@ -547,6 +548,9 @@ window.onclick = function(event) {
     if (event.target == changePasswordModal) {
         closeChangePasswordModal();
     }
+    if (event.target == quickPasswordModal) {
+        closeQuickPasswordModal();
+    }
 }
 
 // Cerrar modales con la tecla ESC
@@ -556,6 +560,7 @@ document.addEventListener('keydown', (event) => {
         closeSqlModal();
         closeDisconnectAllModal();
         closeChangePasswordModal();
+        closeQuickPasswordModal();
     }
 });
 
@@ -701,4 +706,99 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+// ========================================
+// Modal Rápido de Cambio de Contraseña
+// ========================================
+
+// Abrir modal rápido
+function openQuickPasswordModal() {
+    document.getElementById('quickUsername').value = '';
+    document.getElementById('quickNewPassword').value = '';
+    document.getElementById('quickConfirmPassword').value = '';
+    document.getElementById('quickPasswordError').style.display = 'none';
+    document.getElementById('quickPasswordModal').style.display = 'block';
+    
+    // Enfocar el campo de usuario
+    setTimeout(() => {
+        document.getElementById('quickUsername').focus();
+    }, 100);
+}
+
+// Cerrar modal rápido
+function closeQuickPasswordModal() {
+    document.getElementById('quickPasswordModal').style.display = 'none';
+}
+
+// Confirmar cambio de contraseña desde modal rápido
+async function confirmQuickPasswordChange() {
+    const username = document.getElementById('quickUsername').value.trim().toUpperCase();
+    const newPassword = document.getElementById('quickNewPassword').value;
+    const confirmPassword = document.getElementById('quickConfirmPassword').value;
+    const errorDiv = document.getElementById('quickPasswordError');
+    
+    // Validaciones
+    if (!username) {
+        errorDiv.textContent = 'Por favor, ingrese el nombre de usuario';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (!newPassword || !confirmPassword) {
+        errorDiv.textContent = 'Por favor, complete ambos campos de contraseña';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Las contraseñas no coinciden';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Deshabilitar botón para evitar clicks múltiples
+    const confirmButton = event.target;
+    const originalText = confirmButton.textContent;
+    confirmButton.disabled = true;
+    confirmButton.textContent = '⏳ Cambiando...';
+    
+    try {
+        showToast(`Cambiando contraseña de ${username}...`, 'info');
+        
+        const response = await fetch('/api/sessions/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                targetUsername: username,
+                newPassword: newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`✅ ${data.message}`, 'success');
+            closeQuickPasswordModal();
+        } else {
+            errorDiv.textContent = data.error || 'Error al cambiar contraseña';
+            errorDiv.style.display = 'block';
+            confirmButton.disabled = false;
+            confirmButton.textContent = originalText;
+        }
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        errorDiv.textContent = 'Error al cambiar contraseña';
+        errorDiv.style.display = 'block';
+        confirmButton.disabled = false;
+        confirmButton.textContent = originalText;
+    }
 }
