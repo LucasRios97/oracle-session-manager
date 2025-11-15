@@ -8,6 +8,7 @@ router.get('/sessions/by-user', sessionController.getSessionsByUser);
 router.get('/sessions/user/:username', sessionController.getUserSessions);
 router.post('/sessions/disconnect', sessionController.disconnectSession);
 router.post('/sessions/disconnect-all', sessionController.disconnectAllUserSessions);
+router.post('/sessions/change-password', sessionController.changeUserPassword);
 router.get('/statistics', sessionController.getStatistics);
 
 module.exports = router;

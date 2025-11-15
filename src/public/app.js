@@ -116,7 +116,7 @@ function renderUsersSummary(users) {
     const tbody = document.getElementById('userSummaryTable');
     
     // Filtrar solo usuarios con 10 o más sesiones 
-    const filteredUsers = users.filter(user => user.session_count >= 10);
+    const filteredUsers = users.filter(user => user.session_count >= 1);
     
     if (filteredUsers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="loading">No hay usuarios con 10 o más sesiones activas</td></tr>';
@@ -132,6 +132,9 @@ function renderUsersSummary(users) {
             <td>
                 <button class="btn btn-info btn-small" onclick="filterByUser('${escapeHtml(user.username)}')">
                     👁️ Ver Sesiones
+                </button>
+                <button class="btn btn-warning btn-small" onclick="openChangePasswordModal('${escapeHtml(user.username)}')">
+                    🔑 Cambiar Contraseña
                 </button>
                 <button class="btn btn-danger btn-small" onclick="openDisconnectAllModal('${escapeHtml(user.username)}', ${user.session_count})">
                     🔌 Cerrar Todas
@@ -530,6 +533,7 @@ window.onclick = function(event) {
     const disconnectModal = document.getElementById('disconnectModal');
     const sqlModal = document.getElementById('sqlModal');
     const disconnectAllModal = document.getElementById('disconnectAllModal');
+    const changePasswordModal = document.getElementById('changePasswordModal');
     
     if (event.target == disconnectModal) {
         closeModal();
@@ -540,6 +544,9 @@ window.onclick = function(event) {
     if (event.target == disconnectAllModal) {
         closeDisconnectAllModal();
     }
+    if (event.target == changePasswordModal) {
+        closeChangePasswordModal();
+    }
 }
 
 // Cerrar modales con la tecla ESC
@@ -548,8 +555,100 @@ document.addEventListener('keydown', (event) => {
         closeModal();
         closeSqlModal();
         closeDisconnectAllModal();
+        closeChangePasswordModal();
     }
 });
+
+// Variables para cambio de contraseña
+let targetUsernameForPassword = null;
+
+// Mostrar modal de cambio de contraseña
+function openChangePasswordModal(username) {
+    targetUsernameForPassword = username;
+    
+    const details = `
+        <p><strong>Usuario:</strong> ${escapeHtml(username)}</p>
+    `;
+    
+    document.getElementById('changePasswordDetails').innerHTML = details;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('passwordError').style.display = 'none';
+    document.getElementById('changePasswordModal').style.display = 'block';
+}
+
+// Cerrar modal de cambio de contraseña
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+    targetUsernameForPassword = null;
+}
+
+// Confirmar cambio de contraseña
+async function confirmChangePassword() {
+    if (!targetUsernameForPassword) return;
+    
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorDiv = document.getElementById('passwordError');
+    
+    // Validaciones
+    if (!newPassword || !confirmPassword) {
+        errorDiv.textContent = 'Por favor, complete ambos campos';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Las contraseñas no coinciden';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Deshabilitar botón para evitar clicks múltiples
+    const confirmButton = event.target;
+    const originalText = confirmButton.textContent;
+    confirmButton.disabled = true;
+    confirmButton.textContent = '⏳ Cambiando...';
+    
+    try {
+        showToast(`Cambiando contraseña de ${targetUsernameForPassword}...`, 'info');
+        
+        const response = await fetch('/api/sessions/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                targetUsername: targetUsernameForPassword,
+                newPassword: newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`✅ ${data.message}`, 'success');
+            closeChangePasswordModal();
+        } else {
+            errorDiv.textContent = data.error || 'Error al cambiar contraseña';
+            errorDiv.style.display = 'block';
+            confirmButton.disabled = false;
+            confirmButton.textContent = originalText;
+        }
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        errorDiv.textContent = 'Error al cambiar contraseña';
+        errorDiv.style.display = 'block';
+        confirmButton.disabled = false;
+        confirmButton.textContent = originalText;
+    }
+}
 
 // Mostrar toast notification
 function showToast(message, type = 'info') {

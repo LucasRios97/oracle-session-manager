@@ -509,11 +509,87 @@ async function disconnectAllUserSessions(req, res) {
     }
 }
 
+// Cambiar contraseña de usuario usando procedimiento almacenado
+async function changeUserPassword(req, res) {
+    let connection;
+    try {
+        const username = req.user.username;
+        const { targetUsername, newPassword } = req.body;
+        
+        console.log('=== Cambio de contraseña ===');
+        console.log('Usuario solicitante:', username);
+        console.log('Usuario objetivo:', targetUsername);
+        
+        if (!targetUsername || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'Se requiere el nombre de usuario y la nueva contraseña'
+            });
+        }
+        
+        // Validaciones básicas
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                error: 'La contraseña debe tener al menos 6 caracteres'
+            });
+        }
+        
+        connection = await getConnectionFromUser(username);
+        
+        // Llamar al procedimiento almacenado
+        const result = await connection.execute(
+            `BEGIN
+                INV.alter_user_password(:p_usuario, :p_new_pass);
+             END;`,
+            {
+                p_usuario: targetUsername.toUpperCase(),
+                p_new_pass: newPassword
+            },
+            {
+                autoCommit: true
+            }
+        );
+        
+        console.log('✓ Contraseña cambiada exitosamente para:', targetUsername);
+        console.log('=== Cambio de contraseña exitoso ===\n');
+        
+        res.json({
+            success: true,
+            message: `Contraseña cambiada exitosamente para el usuario ${targetUsername}`
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al cambiar contraseña:', error);
+        console.log('=== Cambio de contraseña fallido ===\n');
+        
+        let errorMessage = 'Error al cambiar contraseña';
+        
+        if (error.message.includes('ORA-01031')) {
+            errorMessage = 'Permisos insuficientes para cambiar contraseña';
+        } else if (error.message.includes('ORA-00988')) {
+            errorMessage = 'La contraseña no puede estar vacía';
+        } else if (error.message.includes('ORA-28003')) {
+            errorMessage = 'La contraseña no cumple con los requisitos de complejidad';
+        } else {
+            errorMessage = error.message;
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: errorMessage
+        });
+    } finally {
+        await closeConnection(connection);
+    }
+}
+
 module.exports = {
     getActiveSessions,
     getSessionsByUser,
     getUserSessions,
     disconnectSession,
     disconnectAllUserSessions,
-    getStatistics
+    getStatistics,
+    changeUserPassword
 };
