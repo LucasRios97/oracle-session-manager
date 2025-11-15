@@ -143,12 +143,3 @@ function showSuccess(message) {
     errorDiv.style.color = 'var(--success-color)';
     errorDiv.style.background = 'rgba(16, 185, 129, 0.1)';
 }
-
-// Manejar Enter en los campos
-document.querySelectorAll('input').forEach(input => {
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-        }
-    });
-});
