@@ -116,7 +116,7 @@ function renderUsersSummary(users) {
     const tbody = document.getElementById('userSummaryTable');
     
     // Filtrar solo usuarios con 10 o más sesiones 
-    const filteredUsers = users.filter(user => user.session_count >= 1);
+    const filteredUsers = users.filter(user => user.session_count >= 10);
     
     if (filteredUsers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="loading">No hay usuarios con 10 o más sesiones activas</td></tr>';
