@@ -584,6 +584,144 @@ async function changeUserPassword(req, res) {
     }
 }
 
+// Obtener sesiones que están bloqueando objetos
+async function getBlockingSessions(req, res) {
+    let connection;
+    try {
+        const username = req.user.username;
+        connection = await getConnectionFromUser(username);
+        
+        console.log('=== Consultando sesiones bloqueantes ===');
+        
+        const query = `
+            SELECT DISTINCT
+                bs.sid AS blocking_sid,
+                bs.serial# AS blocking_serial,
+                bs.username AS blocking_username,
+                bs.osuser AS blocking_osuser,
+                bs.machine AS blocking_machine,
+                bs.program AS blocking_program,
+                bs.module AS blocking_module,
+                bs.status AS blocking_status,
+                bs.logon_time AS blocking_logon_time,
+                bs.last_call_et AS blocking_last_call_et,
+                TO_CHAR(TRUNC(bs.last_call_et / 3600), 'FM00') || ':' ||
+                TO_CHAR(TRUNC(MOD(bs.last_call_et, 3600) / 60), 'FM00') || ':' ||
+                TO_CHAR(MOD(bs.last_call_et, 60), 'FM00') as formatted_last_call_et,
+                ws.sid AS waiting_sid,
+                ws.serial# AS waiting_serial,
+                ws.username AS waiting_username,
+                ws.machine AS waiting_machine,
+                ws.event AS wait_event,
+                ws.seconds_in_wait,
+                l.type AS lock_type,
+                DECODE(l.type,
+                    'MR', 'Media Recovery',
+                    'RT', 'Redo Thread',
+                    'UN', 'User Name',
+                    'TX', 'Transaction',
+                    'TM', 'DML',
+                    'UL', 'PL/SQL User Lock',
+                    'DX', 'Distributed Xaction',
+                    'CF', 'Control File',
+                    'IS', 'Instance State',
+                    'FS', 'File Set',
+                    'IR', 'Instance Recovery',
+                    'ST', 'Disk Space Transaction',
+                    'TS', 'Temp Segment',
+                    'IV', 'Library Cache Invalidation',
+                    'LS', 'Log Start or Switch',
+                    'RW', 'Row Wait',
+                    'SQ', 'Sequence Number',
+                    'TE', 'Extend Table',
+                    'TT', 'Temp Table',
+                    l.type) AS lock_description,
+                o.owner || '.' || o.object_name AS blocked_object,
+                o.object_type AS object_type
+            FROM v$session bs
+            JOIN v$session ws ON bs.sid = ws.blocking_session
+            LEFT JOIN v$lock l ON bs.sid = l.sid AND l.block = 1
+            LEFT JOIN dba_objects o ON l.id1 = o.object_id
+            WHERE bs.blocking_session IS NULL
+              AND ws.blocking_session IS NOT NULL
+              AND bs.username IS NOT NULL
+              AND bs.username NOT IN ('SYS', 'SYSTEM')
+            ORDER BY bs.last_call_et DESC, bs.sid
+        `;
+        
+        const result = await connection.execute(query, [], {
+            outFormat: oracledb.OUT_FORMAT_OBJECT
+        });
+        
+        console.log(`Encontradas ${result.rows.length} sesiones bloqueantes`);
+        
+        // Agrupar por sesión bloqueante
+        const blockingSessionsMap = new Map();
+        
+        result.rows.forEach(row => {
+            const blockingSid = row.BLOCKING_SID;
+            
+            if (!blockingSessionsMap.has(blockingSid)) {
+                blockingSessionsMap.set(blockingSid, {
+                    sid: row.BLOCKING_SID,
+                    serial: row.BLOCKING_SERIAL,
+                    username: row.BLOCKING_USERNAME,
+                    osuser: row.BLOCKING_OSUSER,
+                    machine: row.BLOCKING_MACHINE,
+                    program: row.BLOCKING_PROGRAM,
+                    module: row.BLOCKING_MODULE,
+                    status: row.BLOCKING_STATUS,
+                    logon_time: row.BLOCKING_LOGON_TIME,
+                    last_call_et: row.BLOCKING_LAST_CALL_ET,
+                    formatted_last_call_et: row.FORMATTED_LAST_CALL_ET,
+                    blocked_sessions: [],
+                    blocked_objects: new Set()
+                });
+            }
+            
+            const session = blockingSessionsMap.get(blockingSid);
+            session.blocked_sessions.push({
+                sid: row.WAITING_SID,
+                serial: row.WAITING_SERIAL,
+                username: row.WAITING_USERNAME,
+                machine: row.WAITING_MACHINE,
+                wait_event: row.WAIT_EVENT,
+                seconds_in_wait: row.SECONDS_IN_WAIT,
+                lock_type: row.LOCK_TYPE,
+                lock_description: row.LOCK_DESCRIPTION
+            });
+            
+            if (row.BLOCKED_OBJECT) {
+                session.blocked_objects.add(`${row.BLOCKED_OBJECT} (${row.OBJECT_TYPE})`);
+            }
+        });
+        
+        // Convertir a array y formatear
+        const blockingSessions = Array.from(blockingSessionsMap.values()).map(session => ({
+            ...session,
+            blocked_objects: Array.from(session.blocked_objects),
+            blocked_count: session.blocked_sessions.length
+        }));
+        
+        console.log(`Total de sesiones únicas bloqueantes: ${blockingSessions.length}`);
+        
+        res.json({
+            success: true,
+            count: blockingSessions.length,
+            sessions: blockingSessions
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener sesiones bloqueantes:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    } finally {
+        await closeConnection(connection);
+    }
+}
+
 module.exports = {
     getActiveSessions,
     getSessionsByUser,
@@ -591,5 +729,6 @@ module.exports = {
     disconnectSession,
     disconnectAllUserSessions,
     getStatistics,
-    changeUserPassword
+    changeUserPassword,
+    getBlockingSessions
 };

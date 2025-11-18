@@ -802,3 +802,146 @@ async function confirmQuickPasswordChange() {
         confirmButton.textContent = originalText;
     }
 }
+
+// ========================================
+// Modal de Sesiones Bloqueantes
+// ========================================
+
+// Abrir modal de sesiones bloqueantes
+async function openBlockingSessionsModal() {
+    document.getElementById('blockingSessionsModal').style.display = 'block';
+    await loadBlockingSessions();
+}
+
+// Cerrar modal de sesiones bloqueantes
+function closeBlockingSessionsModal() {
+    document.getElementById('blockingSessionsModal').style.display = 'none';
+}
+
+// Cargar sesiones bloqueantes
+async function loadBlockingSessions() {
+    const contentDiv = document.getElementById('blockingSessionsContent');
+    contentDiv.innerHTML = '<p class="loading">Cargando sesiones bloqueantes...</p>';
+    
+    try {
+        const response = await fetch('/api/sessions/blocking');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.count === 0) {
+                contentDiv.innerHTML = '<p style="text-align: center; color: var(--success-color); padding: 20px;">✅ No hay sesiones bloqueando objetos en este momento</p>';
+            } else {
+                renderBlockingSessions(data.sessions);
+            }
+        } else {
+            contentDiv.innerHTML = `<p class="error-message">Error: ${data.error}</p>`;
+        }
+    } catch (error) {
+        console.error('Error al cargar sesiones bloqueantes:', error);
+        contentDiv.innerHTML = '<p class="error-message">Error al cargar sesiones bloqueantes</p>';
+    }
+}
+
+// Renderizar sesiones bloqueantes
+function renderBlockingSessions(sessions) {
+    const contentDiv = document.getElementById('blockingSessionsContent');
+    
+    contentDiv.innerHTML = `
+        <div style="margin-bottom: 15px; padding: 10px; background: var(--danger-color); color: white; border-radius: 6px;">
+            <strong>⚠️ ${sessions.length} sesión(es) bloqueando objetos</strong>
+        </div>
+        ${sessions.map(session => `
+            <div class="blocking-session-card">
+                <div class="blocking-session-header">
+                    <div>
+                        <h3 style="margin: 0; color: var(--danger-color);">
+                            🔒 ${escapeHtml(session.username)} - SID: ${session.sid}, Serial: ${session.serial}
+                        </h3>
+                    </div>
+                    <button 
+                        class="btn btn-danger btn-small" 
+                        onclick="disconnectBlockingSession(${session.sid}, ${session.serial}, '${escapeHtml(session.username)}')">
+                        🔌 Desconectar
+                    </button>
+                </div>
+                
+                <div class="blocking-session-info">
+                    <p><strong>Estado:</strong> <span class="status-badge ${session.status === 'ACTIVE' ? 'status-active' : 'status-inactive'}">${session.status}</span></p>
+                    <p><strong>Máquina:</strong> ${escapeHtml(session.machine || '-')}</p>
+                    <p><strong>Programa:</strong> ${escapeHtml(session.program || '-')}</p>
+                    <p><strong>Módulo:</strong> ${session.module ? `<span class="module-badge">${escapeHtml(session.module)}</span>` : '-'}</p>
+                    <p><strong>Usuario SO:</strong> ${escapeHtml(session.osuser || '-')}</p>
+                    <p><strong>Tiempo Activo:</strong> <strong style="color: var(--danger-color);">${session.formatted_last_call_et}</strong></p>
+                </div>
+                
+                ${session.blocked_objects && session.blocked_objects.length > 0 ? `
+                    <div style="margin: 10px 0; padding: 8px; background: var(--bg-color); border-radius: 6px;">
+                        <strong>📦 Objetos bloqueados:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            ${session.blocked_objects.map(obj => `<li>${escapeHtml(obj)}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                <div class="blocked-sessions-list">
+                    <h4>⏳ Sesiones Esperando (${session.blocked_count}):</h4>
+                    <ul>
+                        ${session.blocked_sessions.map(blocked => `
+                            <li>
+                                <strong>SID: ${blocked.sid}</strong> | 
+                                Usuario: ${escapeHtml(blocked.username || '-')} | 
+                                Máquina: ${escapeHtml(blocked.machine || '-')} | 
+                                Esperando: <span style="color: var(--warning-color);">${blocked.seconds_in_wait}s</span> | 
+                                Tipo Lock: ${escapeHtml(blocked.lock_description || blocked.lock_type || '-')}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
+
+// Refrescar sesiones bloqueantes
+async function refreshBlockingSessions() {
+    showToast('Actualizando sesiones bloqueantes...', 'info');
+    await loadBlockingSessions();
+}
+
+// Desconectar sesión bloqueante
+async function disconnectBlockingSession(sid, serial, username) {
+    if (!confirm(`¿Está seguro de desconectar la sesión bloqueante de ${username}?\n\nSID: ${sid}, Serial: ${serial}\n\nEsto liberará todos los objetos bloqueados.`)) {
+        return;
+    }
+    
+    try {
+        showToast(`Desconectando sesión bloqueante ${sid}...`, 'info');
+        
+        const response = await fetch('/api/sessions/disconnect', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sid: sid,
+                serial: serial
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Sesión bloqueante desconectada exitosamente', 'success');
+            // Refrescar después de 1 segundo
+            setTimeout(async () => {
+                await loadBlockingSessions();
+                await loadData(); // Actualizar dashboard principal
+            }, 1000);
+        } else {
+            showToast('❌ Error al desconectar sesión: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al desconectar sesión:', error);
+        showToast('❌ Error al desconectar sesión', 'error');
+    }
+}

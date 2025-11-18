@@ -291,6 +291,11 @@
         🔑
     </button>
 
+    <!-- Botón flotante para ver sesiones bloqueantes -->
+    <button id="blockingSessionsBtn" class="quick-action-btn-2" onclick="openBlockingSessionsModal()" title="Ver Sesiones Bloqueantes">
+        🔒
+    </button>
+
     <!-- Modal rápido para cambiar contraseña -->
     <div id="quickPasswordModal" class="modal">
         <div class="modal-content modal-small">
@@ -339,6 +344,25 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeQuickPasswordModal()">Cancelar</button>
                 <button class="btn btn-primary" onclick="confirmQuickPasswordChange()">🔑 Cambiar Contraseña</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Sesiones Bloqueantes -->
+    <div id="blockingSessionsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>🔒 Sesiones Bloqueando Objetos</h2>
+                <span class="close" onclick="closeBlockingSessionsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="blockingSessionsContent">
+                    <p class="loading">Cargando sesiones bloqueantes...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="refreshBlockingSessions()">🔄 Actualizar</button>
+                <button class="btn btn-secondary" onclick="closeBlockingSessionsModal()">Cerrar</button>
             </div>
         </div>
     </div>

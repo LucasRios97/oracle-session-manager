@@ -740,7 +740,102 @@ body {
     background: #d97706;
 }
 
+/* Quick Action Button 2 (Sesiones Bloqueantes) */
+.quick-action-btn-2 {
+    position: fixed;
+    bottom: 160px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 998;
+}
+
+.quick-action-btn-2:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.4);
+    background: #dc2626;
+}
+
 /* Modal Small */
+.modal-small {
+    max-width: 500px;
+}
+
+/* Modal Large */
+.modal-large {
+    max-width: 1000px;
+}
+
+/* Blocking Session Card */
+.blocking-session-card {
+    background: var(--card-bg);
+    border: 2px solid var(--danger-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow);
+}
+
+.blocking-session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.blocking-session-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.blocking-session-info p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.blocked-sessions-list {
+    background: var(--bg-color);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.blocked-sessions-list h4 {
+    color: var(--danger-color);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.blocked-sessions-list ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.blocked-sessions-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.blocked-sessions-list li:last-child {
+    border-bottom: none;
+}
+
 .modal-small {
     max-width: 500px;
 }
