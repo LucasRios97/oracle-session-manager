@@ -535,6 +535,7 @@ window.onclick = function(event) {
     const disconnectAllModal = document.getElementById('disconnectAllModal');
     const changePasswordModal = document.getElementById('changePasswordModal');
     const quickPasswordModal = document.getElementById('quickPasswordModal');
+    const unlockAccountModal = document.getElementById('unlockAccountModal');
     
     if (event.target == disconnectModal) {
         closeModal();
@@ -551,6 +552,9 @@ window.onclick = function(event) {
     if (event.target == quickPasswordModal) {
         closeQuickPasswordModal();
     }
+    if (event.target == unlockAccountModal) {
+        closeUnlockAccountModal();
+    }
 }
 
 // Cerrar modales con la tecla ESC
@@ -561,6 +565,7 @@ document.addEventListener('keydown', (event) => {
         closeDisconnectAllModal();
         closeChangePasswordModal();
         closeQuickPasswordModal();
+        closeUnlockAccountModal();
     }
 });
 
@@ -943,5 +948,82 @@ async function disconnectBlockingSession(sid, serial, username) {
     } catch (error) {
         console.error('Error al desconectar sesión:', error);
         showToast('❌ Error al desconectar sesión', 'error');
+    }
+}
+
+// ========================================
+// Modal de Desbloquear Usuario
+// ========================================
+
+// Abrir modal de desbloquear usuario
+function openUnlockAccountModal() {
+    document.getElementById('unlockUsername').value = '';
+    document.getElementById('unlockError').style.display = 'none';
+    document.getElementById('unlockAccountModal').style.display = 'block';
+    
+    // Enfocar el campo de usuario
+    setTimeout(() => {
+        document.getElementById('unlockUsername').focus();
+    }, 100);
+}
+
+// Cerrar modal de desbloquear usuario
+function closeUnlockAccountModal() {
+    document.getElementById('unlockAccountModal').style.display = 'none';
+}
+
+// Confirmar desbloqueo de cuenta
+async function confirmUnlockAccount() {
+    const username = document.getElementById('unlockUsername').value.trim().toUpperCase();
+    const errorDiv = document.getElementById('unlockError');
+    
+    // Validaciones
+    if (!username) {
+        errorDiv.textContent = 'Por favor, ingrese el nombre de usuario';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Confirmar acción
+    if (!confirm(`¿Está seguro de desbloquear la cuenta del usuario ${username}?`)) {
+        return;
+    }
+    
+    // Deshabilitar botón para evitar clicks múltiples
+    const confirmButton = event.target;
+    const originalText = confirmButton.textContent;
+    confirmButton.disabled = true;
+    confirmButton.textContent = '⏳ Desbloqueando...';
+    
+    try {
+        showToast(`Desbloqueando cuenta de ${username}...`, 'info');
+        
+        const response = await fetch('/api/sessions/unlock-account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                targetUsername: username
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`✅ ${data.message}`, 'success');
+            closeUnlockAccountModal();
+        } else {
+            errorDiv.textContent = data.error || 'Error al desbloquear cuenta';
+            errorDiv.style.display = 'block';
+            confirmButton.disabled = false;
+            confirmButton.textContent = originalText;
+        }
+    } catch (error) {
+        console.error('Error al desbloquear cuenta:', error);
+        errorDiv.textContent = 'Error al desbloquear cuenta';
+        errorDiv.style.display = 'block';
+        confirmButton.disabled = false;
+        confirmButton.textContent = originalText;
     }
 }

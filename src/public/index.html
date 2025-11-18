@@ -29,6 +29,9 @@
                 <p class="subtitle">Monitor y Gestión de Sesiones de Base de Datos</p>
             </div>
             <div class="header-actions">
+                <button class="btn btn-warning" onclick="openUnlockAccountModal()" style="margin-right: 10px;">
+                    🔓 Desbloquear Usuario
+                </button>
                 <button class="btn btn-primary" onclick="refreshData()">
                     🔄 Actualizar
                 </button>
@@ -363,6 +366,40 @@
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="refreshBlockingSessions()">🔄 Actualizar</button>
                 <button class="btn btn-secondary" onclick="closeBlockingSessionsModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Desbloquear Usuario -->
+    <div id="unlockAccountModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>🔓 Desbloquear Cuenta de Usuario</h2>
+                <span class="close" onclick="closeUnlockAccountModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Ingrese el nombre del usuario cuya cuenta desea desbloquear:</p>
+                <form id="unlockAccountForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="unlockUsername">Usuario:</label>
+                        <input 
+                            type="text" 
+                            id="unlockUsername" 
+                            class="form-input" 
+                            placeholder="Nombre de usuario Oracle"
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div id="unlockError" class="error-message" style="display: none;"></div>
+                </form>
+                <div class="warning warning-info">
+                    <strong>ℹ️ INFORMACIÓN:</strong> Esta acción desbloqueará la cuenta del usuario en la base de datos Oracle.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeUnlockAccountModal()">Cancelar</button>
+                <button class="btn btn-warning" onclick="confirmUnlockAccount()">🔓 Desbloquear</button>
             </div>
         </div>
     </div>

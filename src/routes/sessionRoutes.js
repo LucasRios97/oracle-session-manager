@@ -10,6 +10,7 @@ router.get('/sessions/blocking', sessionController.getBlockingSessions);
 router.post('/sessions/disconnect', sessionController.disconnectSession);
 router.post('/sessions/disconnect-all', sessionController.disconnectAllUserSessions);
 router.post('/sessions/change-password', sessionController.changeUserPassword);
+router.post('/sessions/unlock-account', sessionController.unlockUserAccount);
 router.get('/statistics', sessionController.getStatistics);
 
 module.exports = router;

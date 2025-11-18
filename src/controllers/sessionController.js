@@ -722,6 +722,70 @@ async function getBlockingSessions(req, res) {
     }
 }
 
+// Desbloquear cuenta de usuario
+async function unlockUserAccount(req, res) {
+    let connection;
+    try {
+        const username = req.user.username;
+        const { targetUsername } = req.body;
+        
+        console.log('=== Desbloquear cuenta de usuario ===');
+        console.log('Usuario solicitante:', username);
+        console.log('Usuario a desbloquear:', targetUsername);
+        
+        if (!targetUsername) {
+            return res.status(400).json({
+                success: false,
+                error: 'Se requiere el nombre de usuario a desbloquear'
+            });
+        }
+        
+        connection = await getConnectionFromUser(username);
+        
+        // Llamar al procedimiento almacenado
+        await connection.execute(
+            `BEGIN
+                INV.alter_user_acc_unlck(:p_usuario);
+             END;`,
+            {
+                p_usuario: targetUsername.toUpperCase()
+            },
+            {
+                autoCommit: true
+            }
+        );
+        
+        console.log('✓ Cuenta desbloqueada exitosamente para:', targetUsername);
+        console.log('=== Desbloqueo exitoso ===\n');
+        
+        res.json({
+            success: true,
+            message: `Cuenta desbloqueada exitosamente para el usuario ${targetUsername}`
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al desbloquear cuenta:', error);
+        console.log('=== Desbloqueo fallido ===\n');
+        
+        let errorMessage = 'Error al desbloquear cuenta';
+        
+        if (error.message.includes('ORA-01031')) {
+            errorMessage = 'Permisos insuficientes para desbloquear cuenta';
+        } else if (error.message.includes('ORA-01918')) {
+            errorMessage = 'El usuario no existe';
+        } else {
+            errorMessage = error.message;
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: errorMessage
+        });
+    } finally {
+        await closeConnection(connection);
+    }
+}
+
 module.exports = {
     getActiveSessions,
     getSessionsByUser,
@@ -730,5 +794,6 @@ module.exports = {
     disconnectAllUserSessions,
     getStatistics,
     changeUserPassword,
-    getBlockingSessions
+    getBlockingSessions,
+    unlockUserAccount
 };
