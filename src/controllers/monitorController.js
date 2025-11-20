@@ -18,11 +18,16 @@ async function getServerMetrics(req, res) {
         // Memory Usage (SGA y PGA)
         const memoryQuery = `
             SELECT 
-                ROUND(SUM(CASE WHEN name LIKE '%SGA%' THEN value ELSE 0 END) / 1024 / 1024 / 1024, 2) as sga_used_gb,
-                ROUND(SUM(CASE WHEN name LIKE '%PGA%' THEN value ELSE 0 END) / 1024 / 1024 / 1024, 2) as pga_used_gb
-            FROM V$SYSSTAT
-            WHERE name IN ('session pga memory', 'session uga memory')
-               OR name LIKE '%SGA%'
+                ROUND(
+                    (SELECT SUM(value) / 1024 / 1024 / 1024 
+                     FROM V$SGA) 
+                , 2) as sga_used_gb,
+                ROUND(
+                    (SELECT value / 1024 / 1024 / 1024 
+                     FROM V$PGASTAT 
+                     WHERE name = 'total PGA allocated')
+                , 2) as pga_used_gb
+            FROM DUAL
         `;
         
         // Sessions

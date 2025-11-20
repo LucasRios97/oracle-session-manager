@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Configuración de sesiones HTTP
-app.use(session({
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'oracle-session-manager-secret-key-2024',
     resave: false,
     saveUninitialized: false,
@@ -22,7 +22,27 @@ app.use(session({
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
-}));
+});
+
+app.use(sessionMiddleware);
+
+// Cerrar pool cuando la sesión se destruye
+app.use(async (req, res, next) => {
+    if (req.session && req.session.user) {
+        const originalDestroy = req.session.destroy.bind(req.session);
+        req.session.destroy = function(callback) {
+            const username = req.session.user?.username;
+            return originalDestroy(async (err) => {
+                if (username) {
+                    const { closeUserPool } = require('./config/database');
+                    await closeUserPool(username);
+                }
+                if (callback) callback(err);
+            });
+        };
+    }
+    next();
+});
 
 // Middleware
 app.use(express.json());

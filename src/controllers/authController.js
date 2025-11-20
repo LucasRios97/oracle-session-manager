@@ -129,12 +129,12 @@ async function logout(req, res) {
         console.log('Usuario:', username);
         
         if (username) {
-            // Cerrar el pool de conexiones del usuario
+            // Cerrar el pool de conexiones del usuario de forma inmediata
             await closeUserPool(username);
-            console.log('✓ Pool de conexiones cerrado para:', username);
+            console.log('✓ Pool de conexiones cerrado inmediatamente para:', username);
         }
         
-        // Destruir la sesión
+        // Destruir la sesión HTTP
         req.session.destroy((err) => {
             if (err) {
                 console.error('Error al destruir sesión:', err);
@@ -144,7 +144,7 @@ async function logout(req, res) {
                 });
             }
             
-            console.log('✓ Sesión destruida');
+            console.log('✓ Sesión HTTP destruida');
             console.log('=== Logout exitoso ===\n');
             
             res.json({

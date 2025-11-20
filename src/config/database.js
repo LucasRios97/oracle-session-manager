@@ -9,10 +9,10 @@ const userPools = new Map();
 
 // Configuración base del pool
 const basePoolConfig = {
-    poolMin: parseInt(process.env.POOL_MIN) || 2,
+    poolMin: parseInt(process.env.POOL_MIN) || 1,
     poolMax: parseInt(process.env.POOL_MAX) || 10,
-    poolIncrement: parseInt(process.env.POOL_INCREMENT) || 2,
-    poolTimeout: 60,               // Timeout de conexión inactiva (segundos)
+    poolIncrement: parseInt(process.env.POOL_INCREMENT) || 1,
+    poolTimeout: 30,               // Timeout de conexión inactiva (segundos) - reducido a 30s
     queueTimeout: 60000,           // Timeout de espera en cola (milisegundos)
     enableStatistics: true         // Habilitar estadísticas del pool
 };
@@ -130,12 +130,15 @@ async function closeUserPool(username) {
         const userPool = userPools.get(username);
         
         if (userPool) {
-            await userPool.close(10);
+            // Cerrar inmediatamente (0 segundos) para forzar el cierre de todas las conexiones
+            await userPool.close(0);
             userPools.delete(username);
             console.log(`✓ Pool de conexiones cerrado para usuario: ${username}`);
         }
     } catch (err) {
         console.error(`Error al cerrar pool para usuario ${username}:`, err);
+        // Intentar eliminar del Map aunque falle el cierre
+        userPools.delete(username);
     }
 }
 
